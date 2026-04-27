@@ -64,4 +64,30 @@ public class HeroesController : ControllerBase {
             internalNotesAfterDeserialize = deserialized?.InternalNotes ?? "null - поле будет проигнорировано"
         });
     }
+    [HttpGet]
+    public ActionResult<List<Hero>> GetAll([FromQuery] string? universe = null) {
+        var heroes = HeroesStore.Heroes.AsEnumerable();
+        if (!string.IsNullOrEmpty(universe)) {
+            if (universe.Equals("Marvel", StringComparison.OrdinalIgnoreCase)) {
+                heroes = heroes.Where(h => h.Universe == Universe.Marvel);
+            }
+            else if (universe.Equals("DC", StringComparison.OrdinalIgnoreCase)) {
+                heroes = heroes.Where(h => h.Universe == Universe.DC);
+            }
+        }
+        return Ok(heroes.ToList());
+    }
+    [HttpGet("search")]
+    public ActionResult<List<Hero>> Search([FromQuery] string name) {
+        if (string.IsNullOrEmpty(name)) {
+            return BadRequest(new { message = "Параметр 'name' обязателен" });
+        }
+        var heroes = HeroesStore.Heroes
+            .Where(h => h.Name.Contains(name, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+        if (!heroes.Any()) {
+            return NotFound(new { message = $"Герои с именем, содержащим '{name}', не найдены" });
+        }
+        return Ok(heroes);
+    }
 }
